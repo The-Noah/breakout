@@ -1,0 +1,27 @@
+*{
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root{
+  font-size: 18px;
+}
+
+html, body{
+  height: 100%;
+}
+
+body{
+  margin: 0;
+  background-color: #000;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+canvas{
+  background-color: #111;
+}
