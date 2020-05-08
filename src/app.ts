@@ -16,6 +16,7 @@ const BRICK_PADDING = 10;
 const BRICK_OFFSET_TOP = 30;
 const BRICK_OFFSET_LEFT = 30;
 
+let running = true;
 let score = 0;
 let lives = 3;
 let paddleCanCollide = true;
@@ -163,10 +164,15 @@ const resetPaddleAndBall = () => {
 
 const end = (message: string) => {
   alert(message);
+  running = false;
   window.location.reload();
 };
 
 const update = () => {
+  if(!running){
+    return;
+  }
+
   for(const gameObject of gameObjects){
     gameObject.update();
   }
