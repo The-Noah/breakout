@@ -4,8 +4,6 @@ const ctx = canvas.getContext("2d");
 const BALL_RADIUS = 10;
 const BALL_SPEED = 3;
 
-const PADDLE_WIDTH = 75;
-const PADDLE_HEIGHT = 10;
 const PADDLE_SPEED = 6;
 
 const BRICK_ROW_COUNT = 3;
@@ -45,7 +43,7 @@ document.addEventListener("keyup", (e) => {
 document.addEventListener("mousemove", (e) => {
   const deltaX = e.clientX - canvas.offsetLeft;
   if(deltaX > 0 && deltaX < canvas.width){
-    paddle.x = deltaX - PADDLE_WIDTH / 2;
+    paddle.x = deltaX - paddle.width / 2;
   }
 }, false);
 
@@ -54,6 +52,8 @@ interface GameObject{
   y: number;
   dx: number;
   dy: number;
+  width: number;
+  height: number;
   update: () => void;
   draw: () => void;
 }
@@ -65,18 +65,20 @@ const ball: GameObject = {
   y: 0,
   dx: 0,
   dy: 0,
+  width: BALL_RADIUS,
+  height: BALL_RADIUS,
   update: function(){
-    if(this.x + this.dx < BALL_RADIUS || this.x + this.dx > canvas.width - BALL_RADIUS){
+    if(this.x + this.dx < this.width || this.x + this.dx > canvas.width - this.width){
       this.dx = -this.dx;
     }
 
-    if(this.y + this.dy < BALL_RADIUS){
+    if(this.y + this.dy < this.height){
       this.dy = -this.dy;
-    }else if(paddleCanCollide && this.x > paddle.x && this.x < paddle.x + PADDLE_WIDTH && this.y + BALL_RADIUS >= paddle.y){
+    }else if(paddleCanCollide && checkCollisionBetweenObjects(paddle, ball)){
       this.dy = -this.dy;
       paddleCanCollide = false;
-      setTimeout(() => paddleCanCollide = true, 200);
-    }else if(this.y + this.dy > canvas.height - BALL_RADIUS){
+      setTimeout(() => paddleCanCollide = true, 100);
+    }else if(this.y + this.dy > canvas.height - this.height){
       lives--;
       if(lives > 0){
         resetPaddleAndBall();
@@ -90,7 +92,7 @@ const ball: GameObject = {
   },
   draw: function(){
     ctx.beginPath();
-    ctx.arc(this.x, this.y, BALL_RADIUS, 0, Math.PI * 2);
+    ctx.arc(this.x, this.y, this.width, 0, Math.PI * 2);
     ctx.fill();
     ctx.closePath();
   }
@@ -99,9 +101,11 @@ gameObjects.push(ball);
 
 const paddle: GameObject = {
   x: 0,
-  y: canvas.height - PADDLE_HEIGHT * 1.5,
+  y: canvas.height - 15,
   dx: 0,
   dy: 0,
+  width: 75,
+  height: 10,
   update: function(){
     if(keysPressed.left){
       this.x -= PADDLE_SPEED;
@@ -111,13 +115,13 @@ const paddle: GameObject = {
 
     if(this.x < 0){
       this.x = 0;
-    }else if(this.x + PADDLE_WIDTH > canvas.width){
-      this.x = canvas.width - PADDLE_WIDTH;
+    }else if(this.x + this.width > canvas.width){
+      this.x = canvas.width - this.width;
     }
   },
   draw: function(){
     ctx.beginPath();
-    ctx.rect(this.x, this.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    ctx.rect(this.x, this.y, this.width, this.height);
     ctx.fill();
     ctx.closePath();
   }
@@ -136,13 +140,24 @@ for(let column = 0; column < BRICK_COLUMN_COUNT; column++){
   }
 }
 
-const checkBrickCollision = (object: GameObject) => {
+const checkCollision = (minAx: number, minAy: number, maxAx: number, maxAy: number, minBx: number, minBy: number, maxBx: number, maxBy: number) => {
+  return !(maxAx < minBx || minAx > maxBx || minAy > maxBy || maxAy < minBy);
+};
+
+const checkCollisionBetweenObjects = (a: GameObject, b: GameObject) => {
+  return checkCollision(a.x, a.y, a.x + a.width, a.y + a.height, b.x, b.y, b.x + b.width, b.y + b.height);
+};
+
+const checkBrickCollision = () => {
   for(let column = 0; column < BRICK_COLUMN_COUNT; column++){
     for(let row = 0; row < BRICK_ROW_COUNT; row++){
       const brick = bricks[column][row];
+      if(!brick){
+        continue;
+      }
 
-      if(object.x > brick.x && object.x < brick.x + BRICK_WIDTH && object.y > brick.y && object.y < brick.y + BRICK_HEIGHT){
-        object.dy = -object.dy;
+      if(checkCollision(ball.x, ball.y, ball.x + ball.width, ball.y + ball.height, brick.x, brick.y, brick.x + BRICK_WIDTH, brick.y + BRICK_HEIGHT)){
+        ball.dy = -ball.dy;
         bricks[column][row] = false;
         score++;
 
@@ -155,7 +170,7 @@ const checkBrickCollision = (object: GameObject) => {
 };
 
 const resetPaddleAndBall = () => {
-  paddle.x = (canvas.width - PADDLE_WIDTH) / 2;
+  paddle.x = (canvas.width - paddle.width) / 2;
   ball.x = canvas.width / 2;
   ball.y = canvas.height - 30;
   ball.dx = BALL_SPEED;
@@ -177,7 +192,7 @@ const update = () => {
     gameObject.update();
   }
 
-  checkBrickCollision(ball);
+  checkBrickCollision();
 
   draw();
 
