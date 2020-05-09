@@ -6,7 +6,7 @@ const PARTICLE_SIZE = 2;
 const PARTICLE_SPEED = 10;
 
 const BALL_RADIUS = 10;
-const BALL_SPEED = 4;
+let ballSpeed = 3;
 
 const PADDLE_SPEED = 6;
 const PADDLE_INFLUENCE = 1;
@@ -19,10 +19,10 @@ const BRICK_PADDING = 10;
 const BRICK_OFFSET_TOP = 30;
 const BRICK_OFFSET_LEFT = 30;
 
-let running = true;
 let score = 0;
-let lives = 3;
-let paddleCanCollide = true;
+let lives: number;
+let paddleCanCollide: boolean;
+let round = 1;
 
 const keysPressed = {
   left: false,
@@ -83,10 +83,10 @@ const ball: GameObject = {
       this.dy = -this.dy;
       this.dx += Math.random() + PADDLE_INFLUENCE * (ball.x + ball.width > paddle.x + paddle.width / 2 ? 1 : -1);
 
-      if(Math.abs(this.dx) < BALL_SPEED / 2){
-        this.dx = this.dx < 0 ? -BALL_SPEED / 2 : BALL_SPEED / 2;
-      }else if(Math.abs(this.dx) > BALL_SPEED * 2){
-        this.dx = this.dx < 0 ? -BALL_SPEED * 2 : BALL_SPEED * 2;
+      if(Math.abs(this.dx) < ballSpeed / 2){
+        this.dx = this.dx < 0 ? -ballSpeed / 2 : ballSpeed / 2;
+      }else if(Math.abs(this.dx) > ballSpeed * 2){
+        this.dx = this.dx < 0 ? -ballSpeed * 2 : ballSpeed * 2;
       }
 
       paddleCanCollide = false;
@@ -96,7 +96,7 @@ const ball: GameObject = {
       if(lives > 0){
         resetPaddleAndBall();
       }else{
-        end("Game Over");
+        reset(`Game Over. Final Score: ${score}`);
       }
     }
   },
@@ -139,16 +139,20 @@ const paddle: GameObject = {
 gameObjects.push(paddle);
 
 const bricks = [];
-for(let column = 0; column < BRICK_COLUMN_COUNT; column++){
-  bricks[column] = [];
+const generateBricks = () => {
+  bricks.splice(bricks.length - 1);
 
-  for(let row = 0; row < BRICK_ROW_COUNT; row++){
-    bricks[column][row] = {
-      x: (column * (BRICK_WIDTH + BRICK_PADDING)) + BRICK_OFFSET_LEFT,
-      y: (row * (BRICK_HEIGHT + BRICK_PADDING)) + BRICK_OFFSET_TOP
-    };
+  for(let column = 0; column < BRICK_COLUMN_COUNT; column++){
+    bricks[column] = [];
+  
+    for(let row = 0; row < BRICK_ROW_COUNT; row++){
+      bricks[column][row] = {
+        x: (column * (BRICK_WIDTH + BRICK_PADDING)) + BRICK_OFFSET_LEFT,
+        y: (row * (BRICK_HEIGHT + BRICK_PADDING)) + BRICK_OFFSET_TOP
+      };
+    }
   }
-}
+};
 
 const checkCollision = (minAx: number, minAy: number, maxAx: number, maxAy: number, minBx: number, minBy: number, maxBx: number, maxBy: number) => {
   return !(maxAx < minBx || minAx > maxBx || minAy > maxBy || maxAy < minBy);
@@ -189,14 +193,15 @@ const checkBrickCollision = () => {
       if(checkCollision(ball.x, ball.y, ball.x + ball.width, ball.y + ball.height, brick.x, brick.y, brick.x + BRICK_WIDTH, brick.y + BRICK_HEIGHT)){
         ball.dy = -ball.dy;
         bricks[column][row] = false;
-        score++;
+        score += round;
 
         for(let i = 0; i < PARTICLES; i++){
           spawnParticle(brick.x + BRICK_WIDTH / 2, brick.y + BRICK_HEIGHT / 2);
         }
 
         if(score === BRICK_ROW_COUNT * BRICK_COLUMN_COUNT){
-          end("You Win!");
+          round++;
+          reset();
         }
       }
     }
@@ -207,21 +212,25 @@ const resetPaddleAndBall = () => {
   paddle.x = (canvas.width - paddle.width) / 2;
   ball.x = canvas.width / 2;
   ball.y = canvas.height - 30;
-  ball.dx = BALL_SPEED * Math.random() * (Math.random() < .5 ? -1 : 1);
-  ball.dy = -BALL_SPEED * 1.5;
+  ball.dx = ballSpeed * Math.random() * (Math.random() < .5 ? -1 : 1);
+  ball.dy = -ballSpeed * 1.5;
 };
 
-const end = (message: string) => {
-  alert(message);
-  running = false;
-  window.location.reload();
+const reset = (message?: string) => {
+  if(message){
+    alert(message);
+    score = 0;
+  }
+
+  lives = 3;
+  paddleCanCollide = true;
+  ballSpeed += round / 2;
+
+  resetPaddleAndBall();
+  generateBricks();
 };
 
 const update = () => {
-  if(!running){
-    return;
-  }
-
   for(const gameObject of gameObjects){
     gameObject.update();
 
@@ -269,6 +278,6 @@ const draw = () => {
 ctx.font = "16px Arial";
 ctx.fillStyle = "#FFF";
 
-resetPaddleAndBall();
+reset();
 
 update();
