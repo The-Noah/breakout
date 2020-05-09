@@ -162,8 +162,8 @@ const spawnParticle = (x: number, y: number, dx?: number, dy?: number) => {
   const particle: GameObject = {
     x,
     y,
-    dx: dx ? dx : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < 0.5 ? -1 : 1),
-    dy: dy ? dy : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < 0.5 ? -1 : 1),
+    dx: dx ? dx : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < .5 ? -1 : 1),
+    dy: dy ? dy : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < .5 ? -1 : 1),
     width: PARTICLE_SIZE,
     height: 0,
     update: function(){},
@@ -207,8 +207,8 @@ const resetPaddleAndBall = () => {
   paddle.x = (canvas.width - paddle.width) / 2;
   ball.x = canvas.width / 2;
   ball.y = canvas.height - 30;
-  ball.dx = BALL_SPEED;
-  ball.dy = -BALL_SPEED;
+  ball.dx = BALL_SPEED * Math.random() * (Math.random() < .5 ? -1 : 1);
+  ball.dy = -BALL_SPEED * 1.5;
 };
 
 const end = (message: string) => {
