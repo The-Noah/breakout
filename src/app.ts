@@ -20,9 +20,9 @@ const BRICK_OFFSET_TOP = 30;
 const BRICK_OFFSET_LEFT = 30;
 
 let score = 0;
-let lives: number;
-let paddleCanCollide: boolean;
+let lives = 3;
 let round = 1;
+let paddleCanCollide: boolean;
 
 const keysPressed = {
   left: false,
@@ -199,7 +199,7 @@ const checkBrickCollision = () => {
           spawnParticle(brick.x + BRICK_WIDTH / 2, brick.y + BRICK_HEIGHT / 2);
         }
 
-        if(score === BRICK_ROW_COUNT * BRICK_COLUMN_COUNT){
+        if(bricks.filter((row) => row.filter((brick) => brick).length > 0).length === 0){
           round++;
           reset();
         }
@@ -220,9 +220,9 @@ const reset = (message?: string) => {
   if(message){
     alert(message);
     score = 0;
+    lives = 3;
   }
 
-  lives = 3;
   paddleCanCollide = true;
   ballSpeed += round / 2;
 
@@ -237,7 +237,7 @@ const update = () => {
     gameObject.x += gameObject.dx;
     gameObject.y += gameObject.dy;
 
-    if(gameObject.x < 0 || gameObject.x + gameObject.width > canvas.width || gameObject.y < 0 || gameObject.y + gameObject.height > canvas.height){
+    if(gameObject !== ball && gameObject !== paddle && (gameObject.x < 0 || gameObject.x + gameObject.width > canvas.width || gameObject.y < 0 || gameObject.y + gameObject.height > canvas.height)){
       gameObjects.splice(gameObjects.indexOf(gameObject), 1);
     }
   }
