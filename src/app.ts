@@ -22,7 +22,6 @@ const BRICK_OFFSET_LEFT = 30;
 let score = 0;
 let lives = 3;
 let round = 1;
-let paddleCanCollide: boolean;
 
 const keysPressed = {
   left: false,
@@ -52,13 +51,16 @@ document.addEventListener("mousemove", (e) => {
   }
 }, false);
 
-interface GameObject{
+interface Collider{
   x: number;
   y: number;
-  dx: number;
-  dy: number;
   width: number;
   height: number;
+}
+
+interface GameObject extends Collider{
+  dx: number;
+  dy: number;
   update: () => void;
   draw: () => void;
 }
@@ -68,10 +70,10 @@ const gameObjects: GameObject[] = [];
 const ball: GameObject = {
   x: 0,
   y: 0,
-  dx: 0,
-  dy: 0,
   width: BALL_RADIUS,
   height: BALL_RADIUS,
+  dx: 0,
+  dy: 0,
   update: function(){
     if(this.x + this.dx < this.width || this.x + this.dx > canvas.width - this.width){
       this.dx = -this.dx;
@@ -79,7 +81,7 @@ const ball: GameObject = {
 
     if(this.y + this.dy < this.height){
       this.dy = -this.dy;
-    }else if(paddleCanCollide && checkCollisionBetweenObjects(paddle, ball)){
+    }else if(checkCollisionBetweenColliders(paddle, this) || (this.y + this.dy >= canvas.height - this.height && this.x - this.width > paddle.x && this.x < paddle.x + paddle.width)){
       this.dy = -this.dy;
       this.dx += Math.random() + PADDLE_INFLUENCE * (ball.x + ball.width > paddle.x + paddle.width / 2 ? 1 : -1);
 
@@ -89,8 +91,6 @@ const ball: GameObject = {
         this.dx = this.dx < 0 ? -ballSpeed * 2 : ballSpeed * 2;
       }
 
-      paddleCanCollide = false;
-      setTimeout(() => paddleCanCollide = true, 100);
     }else if(this.y + this.dy > canvas.height - this.height){
       lives--;
       if(lives > 0){
@@ -112,10 +112,10 @@ gameObjects.push(ball);
 const paddle: GameObject = {
   x: 0,
   y: canvas.height - 15,
-  dx: 0,
-  dy: 0,
   width: 75,
   height: 10,
+  dx: 0,
+  dy: 0,
   update: function(){
     if(keysPressed.left){
       this.x -= PADDLE_SPEED;
@@ -158,7 +158,7 @@ const checkCollision = (minAx: number, minAy: number, maxAx: number, maxAy: numb
   return !(maxAx < minBx || minAx > maxBx || minAy > maxBy || maxAy < minBy);
 };
 
-const checkCollisionBetweenObjects = (a: GameObject, b: GameObject) => {
+const checkCollisionBetweenColliders = (a: Collider, b: Collider) => {
   return checkCollision(a.x, a.y, a.x + a.width, a.y + a.height, b.x, b.y, b.x + b.width, b.y + b.height);
 };
 
@@ -166,10 +166,10 @@ const spawnParticle = (x: number, y: number, dx?: number, dy?: number) => {
   const particle: GameObject = {
     x,
     y,
-    dx: dx ? dx : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < .5 ? -1 : 1),
-    dy: dy ? dy : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < .5 ? -1 : 1),
     width: PARTICLE_SIZE,
     height: 0,
+    dx: dx ? dx : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < .5 ? -1 : 1),
+    dy: dy ? dy : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < .5 ? -1 : 1),
     update: function(){},
     draw: function(){
       ctx.beginPath();
@@ -190,7 +190,7 @@ const checkBrickCollision = () => {
         continue;
       }
 
-      if(checkCollision(ball.x, ball.y, ball.x + ball.width, ball.y + ball.height, brick.x, brick.y, brick.x + BRICK_WIDTH, brick.y + BRICK_HEIGHT)){
+      if(checkCollisionBetweenColliders(ball, {...brick, width: BRICK_WIDTH, height: BRICK_HEIGHT})){
         ball.dy = -ball.dy;
         bricks[column][row] = false;
         score += round;
@@ -223,7 +223,6 @@ const reset = (message?: string) => {
     lives = 3;
   }
 
-  paddleCanCollide = true;
   ballSpeed += round / 2;
 
   resetPaddleAndBall();
