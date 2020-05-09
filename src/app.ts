@@ -1,10 +1,15 @@
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d");
 
+const PARTICLES = 50;
+const PARTICLE_SIZE = 2;
+const PARTICLE_SPEED = 10;
+
 const BALL_RADIUS = 10;
-const BALL_SPEED = 3;
+const BALL_SPEED = 4;
 
 const PADDLE_SPEED = 6;
+const PADDLE_INFLUENCE = 1;
 
 const BRICK_ROW_COUNT = 3;
 const BRICK_COLUMN_COUNT = 5;
@@ -76,6 +81,14 @@ const ball: GameObject = {
       this.dy = -this.dy;
     }else if(paddleCanCollide && checkCollisionBetweenObjects(paddle, ball)){
       this.dy = -this.dy;
+      this.dx += Math.random() + PADDLE_INFLUENCE * (ball.x + ball.width > paddle.x + paddle.width / 2 ? 1 : -1);
+
+      if(Math.abs(this.dx) < BALL_SPEED / 2){
+        this.dx = this.dx < 0 ? -BALL_SPEED / 2 : BALL_SPEED / 2;
+      }else if(Math.abs(this.dx) > BALL_SPEED * 2){
+        this.dx = this.dx < 0 ? -BALL_SPEED * 2 : BALL_SPEED * 2;
+      }
+
       paddleCanCollide = false;
       setTimeout(() => paddleCanCollide = true, 100);
     }else if(this.y + this.dy > canvas.height - this.height){
@@ -86,9 +99,6 @@ const ball: GameObject = {
         end("Game Over");
       }
     }
-
-    this.x += this.dx;
-    this.y += this.dy;
   },
   draw: function(){
     ctx.beginPath();
@@ -148,6 +158,26 @@ const checkCollisionBetweenObjects = (a: GameObject, b: GameObject) => {
   return checkCollision(a.x, a.y, a.x + a.width, a.y + a.height, b.x, b.y, b.x + b.width, b.y + b.height);
 };
 
+const spawnParticle = (x: number, y: number, dx?: number, dy?: number) => {
+  const particle: GameObject = {
+    x,
+    y,
+    dx: dx ? dx : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < 0.5 ? -1 : 1),
+    dy: dy ? dy : (.2 + PARTICLE_SPEED * Math.random()) * (Math.random() < 0.5 ? -1 : 1),
+    width: PARTICLE_SIZE,
+    height: 0,
+    update: function(){},
+    draw: function(){
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.width, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.closePath();
+    }
+  };
+
+  gameObjects.push(particle);
+};
+
 const checkBrickCollision = () => {
   for(let column = 0; column < BRICK_COLUMN_COUNT; column++){
     for(let row = 0; row < BRICK_ROW_COUNT; row++){
@@ -160,6 +190,10 @@ const checkBrickCollision = () => {
         ball.dy = -ball.dy;
         bricks[column][row] = false;
         score++;
+
+        for(let i = 0; i < PARTICLES; i++){
+          spawnParticle(brick.x + BRICK_WIDTH / 2, brick.y + BRICK_HEIGHT / 2);
+        }
 
         if(score === BRICK_ROW_COUNT * BRICK_COLUMN_COUNT){
           end("You Win!");
@@ -190,6 +224,13 @@ const update = () => {
 
   for(const gameObject of gameObjects){
     gameObject.update();
+
+    gameObject.x += gameObject.dx;
+    gameObject.y += gameObject.dy;
+
+    if(gameObject.x < 0 || gameObject.x + gameObject.width > canvas.width || gameObject.y < 0 || gameObject.y + gameObject.height > canvas.height){
+      gameObjects.splice(gameObjects.indexOf(gameObject), 1);
+    }
   }
 
   checkBrickCollision();
@@ -221,8 +262,8 @@ const draw = () => {
     }
   }
 
-  ctx.fillText(`Score: ${score}`, 8, 20);
-  ctx.fillText(`Lives: ${lives}`, canvas.width - 64, 20);
+  ctx.fillText(`Score: ${score}`, 8, 18);
+  ctx.fillText(`Lives: ${lives}`, canvas.width - ctx.measureText(`Lives: ${lives}`).width - 8, 18);
 };
 
 ctx.font = "16px Arial";
